@@ -30,6 +30,7 @@ FS_BASE_PATH=/usr/src
 CURRENT_PATH=$PWD
 # KERNELARCH=$(uname -m)
 # This script is intended for x86_64 architecture
+# shellcheck disable=SC2034
 KERNELARCH="x86_64"
 # Valid Freeswitch versions are : v1.2.stable
 #FS_VERSION=v1.2.stable
@@ -43,7 +44,7 @@ if [ -f /etc/debian_version ] ; then
 elif [ -f /etc/redhat-release ] ; then
     DIST='CENTOS'
 else
-    echo $SCRIPT_NOTICE
+    echo "$SCRIPT_NOTICE"
     exit 1
 fi
 
@@ -53,6 +54,8 @@ echo "FreeSWITCH will be installed!"
 echo ""
 echo "Press Enter to continue or CTRL-C to exit"
 echo ""
+# shellcheck disable=SC2034
+# shellcheck disable=SC2162
 read INPUT
 
 
@@ -78,7 +81,7 @@ func_install_deps() {
 
             apt-get -y install autoconf automake devscripts gawk g++ git-core 'libjpeg-dev|libjpeg62-turbo-dev' libncurses5-dev 'libtool-bin|libtool' make python-dev gawk pkg-config libtiff5-dev libperl-dev libgdbm-dev libdb-dev gettext libssl-dev libcurl4-openssl-dev libpcre3-dev libspeex-dev libspeexdsp-dev libsqlite3-dev libedit-dev libldns-dev libpq-dev libmp3lame-dev
 
-            if [ $DEBIANCODE != "jessie" ]; then
+            if [ "$DEBIANCODE" != "jessie" ]; then
                 #DEBIAN7
                 apt-get -y install libgnutls-dev libtiff4-dev libtiff4
             else
@@ -116,13 +119,14 @@ func_install_fs_sources() {
     fi
 
     #Download and install FS from git repository.
+    # shellcheck disable=SC2164
     cd $FS_BASE_PATH
     rm -rf freeswitch
     # dont use depth :  --depth=1 as we wont be able to checkout
     #git clone --branch=$FS_VERSION https://freeswitch.org/stash/scm/fs/freeswitch.git --depth=1
     # moved to github
     git clone --branch=$FS_VERSION https://github.com/signalwire/freeswitch.git --depth=1
-    cd $FS_BASE_PATH/freeswitch
+    cd $FS_BASE_PATH/freeswitch || exit
     # git checkout $FS_VERSION
 
     echo ""
@@ -189,9 +193,11 @@ func_install_luasql() {
     apt-get install -y libpq-dev
 
     #Install LuaSQL
+    # shellcheck disable=SC2164
     cd /usr/src/
     wget --no-check-certificate https://github.com/keplerproject/luasql/archive/v2.3.0.zip
     unzip v2.3.0.zip
+    # shellcheck disable=SC2164
     cd luasql-2.3.0/
 
     #Copy a config file adapted for 64bit
@@ -209,6 +215,7 @@ func_install_luasql() {
 
 func_configure_fs() {
     echo "Enable FreeSWITCH modules"
+    # shellcheck disable=SC2164
     cd $FS_CONFIG_PATH/autoload_configs/
     [ -f modules.conf.xml ] && cp modules.conf.xml modules.conf.xml.bak
     sed -i -r \
@@ -244,8 +251,10 @@ func_configure_fs() {
 func_create_alias_fs_cli() {
     echo "Setup alias fs_cli"
     alias fs_cli='/usr/local/freeswitch/bin/fs_cli'
-    chk=`grep "fs_cli" ~/.bashrc|wc -l`
-    if [ $chk -lt 1 ] ; then
+    # shellcheck disable=SC2006
+    # shellcheck disable=SC2126
+    chk=$(grep "fs_cli" ~/.bashrc|wc -l)
+    if [ "$chk" -lt 1 ] ; then
         echo "alias fs_cli='/usr/local/freeswitch/bin/fs_cli'" >> ~/.bashrc
     fi
 }
@@ -256,7 +265,7 @@ func_add_init_script() {
         'DEBIAN')
             wget --no-check-certificate $FS_INIT_PATH/debian/freeswitch -O /etc/init.d/freeswitch
             chmod 0755 /etc/init.d/freeswitch
-            cd /etc/init.d; update-rc.d freeswitch defaults 90
+            cd /etc/init.d || exit; update-rc.d freeswitch defaults 90
             # Remove with:
             # cd /etc/init.d; update-rc.d -f freeswitch remove
         ;;
@@ -307,7 +316,7 @@ func_configure_fs
 #Start FreeSWITCH
 /etc/init.d/freeswitch start
 
-cd $CURRENT_PATH
+cd "$CURRENT_PATH" || exit
 
 echo ""
 echo "********************************************"
